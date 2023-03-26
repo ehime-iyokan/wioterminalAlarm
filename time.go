@@ -1,13 +1,8 @@
-//go:build wioterminal
-// +build wioterminal
-
 package main
 
 import (
-	"device/sam"
 	"machine"
 	"runtime"
-	"runtime/interrupt"
 	"time"
 
 	"tinygo.org/x/drivers/net/http"
@@ -21,12 +16,6 @@ var (
 	debug     bool
 	buf       [0x1000]byte
 )
-
-func handleInterrupt(interrupt.Interrupt) {
-	// should reset IRQ
-	uart.Receive(byte((uart.Bus.DATA.Get() & 0xFF)))
-	uart.Bus.INTFLAG.SetBits(sam.SERCOM_USART_INT_INTFLAG_RXC)
-}
 
 // SetupRTL8720DN sets up the RTL8270DN for use.
 func SetupRTL8720DN() (*rtl8720dn.Driver, error) {
@@ -68,33 +57,6 @@ func Wifi(ssid, pass string, timeout time.Duration) (*rtl8720dn.Driver, error) {
 	return rtl, nil
 }
 
-func Device() *rtl8720dn.Driver {
-	return rtl
-}
-
-func Connected() bool {
-	return connected
-}
-
-func IP() rtl8720dn.IPAddress {
-	ip, _, _, _ := rtl.GetIP()
-	return ip
-}
-
-func Subnet() rtl8720dn.IPAddress {
-	_, subnet, _, _ := rtl.GetIP()
-	return subnet
-}
-
-func Gateway() rtl8720dn.IPAddress {
-	_, _, gateway, _ := rtl.GetIP()
-	return gateway
-}
-
-func SetRootCA(s *string) {
-	rtl.SetRootCA(s)
-}
-
 // Wait for user to open serial console
 func waitSerial() {
 	for !machine.Serial.DTR() {
@@ -104,17 +66,4 @@ func waitSerial() {
 
 type UARTx struct {
 	*machine.UART
-}
-
-func (u UARTx) Read(p []byte) (n int, err error) {
-	if u.Buffered() == 0 {
-		time.Sleep(1 * time.Millisecond)
-		return 0, nil
-	}
-	return u.UART.Read(p)
-}
-
-// Debug sets the debug mode.
-func Debug(b bool) {
-	debug = b
 }
