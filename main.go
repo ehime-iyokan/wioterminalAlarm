@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -17,8 +18,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+
 	for {
 		time.Sleep(1 * time.Second)
+		now := time.Now()
+		nowUTC := now.UTC()
+		nowJST := nowUTC.In(jst)
 
+		fmt.Println(nowJST)
 	}
 }
