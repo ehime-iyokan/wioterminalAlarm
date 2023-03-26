@@ -32,8 +32,7 @@ func SetupRTL8720DN() (*rtl8720dn.Driver, error) {
 	return rtl, nil
 }
 
-// Wifi sets up the RTL8720DN and connects it to Wi-Fi.
-func Wifi(ssid, pass string, timeout time.Duration) (*rtl8720dn.Driver, error) {
+func AdjustTime(ssid, pass string, timeout time.Duration) (*rtl8720dn.Driver, error) {
 	_, err := SetupRTL8720DN()
 	if err != nil {
 		return nil, err

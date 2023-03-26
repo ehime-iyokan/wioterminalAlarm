@@ -13,7 +13,7 @@ var (
 )
 
 func main() {
-	_, err := Wifi(ssid, password, 10*time.Millisecond)
+	_, err := AdjustTime(ssid, password, 10*time.Millisecond)
 	if err != nil {
 		log.Fatal(err)
 	}
