@@ -18,14 +18,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
-
 	for {
 		time.Sleep(1 * time.Second)
-		now := time.Now()
-		nowUTC := now.UTC()
-		nowJST := nowUTC.In(jst)
-
-		fmt.Println(nowJST)
+		timeNow := fetchNowJst()
+		fmt.Println(timeNow)
 	}
+}
+
+func fetchNowJst() time.Time {
+	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+	now := time.Now()
+	nowUTC := now.UTC()
+	return nowUTC.In(jst)
 }
