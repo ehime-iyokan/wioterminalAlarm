@@ -11,3 +11,15 @@
     * ボタン2を押すとブザー停止
 
  ※:ボタンはwioterminal上側のボタンを指し、左から「ボタン3」,「ボタン2」,「ボタン1」
+# require
+* 以下のようなファイルをalermのディレクトリ内に格納してください
+  * 「xxxx」等は適したものに書き換える
+```go
+[xxxx_init.go]
+package main
+
+func init() {
+	ssid = "yyyy"
+	password = "zzzz"
+}
+````
