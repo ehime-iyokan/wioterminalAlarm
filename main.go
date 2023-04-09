@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"time"
+
+	"github.com/sago35/tinydisplay/examples/initdisplay"
 )
 
 var (
@@ -13,6 +16,10 @@ var (
 )
 
 func main() {
+	white := color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
+
+	display := initdisplay.InitDisplay()
+	display.FillScreen(white)
 	_, err := AdjustTime(ssid, password, 10*time.Millisecond)
 	if err != nil {
 		log.Fatal(err)
