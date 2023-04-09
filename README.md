@@ -15,11 +15,11 @@
 * 以下のようなファイルをalermのディレクトリ内に格納してください
   * 「xxxx」等は適したものに書き換える
 ```go
-[xxxx_init.go]
+[ssid_init.go]
 package main
 
 func init() {
-	ssid = "yyyy"
-	password = "zzzz"
+	ssid = "xxxx"
+	password = "yyyy"
 }
 ````
