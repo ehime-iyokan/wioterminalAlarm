@@ -31,11 +31,3 @@ func main() {
 		fmt.Println(timeNow)
 	}
 }
-
-func fetchStringNowJst() string {
-	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
-	now := time.Now()
-	nowUTC := now.UTC()
-	nowJST := nowUTC.In(jst)
-	return nowJST.Format("2006/01/02 15:04:05")
-}
