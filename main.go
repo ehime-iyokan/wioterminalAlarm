@@ -27,14 +27,15 @@ func main() {
 
 	for {
 		time.Sleep(1 * time.Second)
-		timeNow := fetchNowJst()
+		timeNow := fetchStringNowJst()
 		fmt.Println(timeNow)
 	}
 }
 
-func fetchNowJst() time.Time {
+func fetchStringNowJst() string {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 	now := time.Now()
 	nowUTC := now.UTC()
-	return nowUTC.In(jst)
+	nowJST := nowUTC.In(jst)
+	return nowJST.Format("2006/01/02 15:04:05")
 }
