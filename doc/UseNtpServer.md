@@ -1,11 +1,7 @@
-# wioterminalのwifiモジュールを扱う
+# NTPサーバーから時間を取得する
 
-## wifiモジュールの設定
-* rtl8720dn.go より
-  * input: wifiアクセスポイントの ssid, pass, timeoutとなる時間
-  * output:エラーのみ(time.Now()で現在時刻が取得できるようになる)
-
-## 参考
-* "github.com/sago35/tinygo-examples/wioterminal/initialize"
-  * rtl8720dn.go
-  * ntp.go
+## wioterminalのwifiモジュールを使用し、NTPサーバーと通信する必要がある
+* 参考
+  * https://github.com/sago35/tinygo-examples/tree/main/wioterminal/initialize
+    * rtl8720dn.go
+    * ntp.go
