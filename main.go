@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"log"
+	"machine"
 	"strings"
 	"time"
 
@@ -35,25 +36,39 @@ func main() {
 	YMDlabel.FillScreen(glay)
 	HMSlabel.FillScreen(glay)
 
+	// mode = 0:時間設定モード, 1:時間表示モード
+	mode := 1
+	button_3 := machine.BUTTON_3
+	button_3.Configure(machine.PinConfig{Mode: machine.PinInput})
+	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
+		mode ^= 1
+	})
+
 	hms_before := ""
 	for {
-		timeNow := fetchStringNowJst()
-		array := strings.Split(timeNow, " ")
-		ymd := array[0]
-		hms := array[1]
+		if mode == 1 {
+			timeNow := fetchStringNowJst()
+			array := strings.Split(timeNow, " ")
+			ymd := array[0]
+			hms := array[1]
 
-		if hms_before == hms {
-			// 何もしない
+			if hms_before == hms {
+				// 何もしない
+			} else {
+				YMDlabel.FillScreen(glay)
+				tinyfont.WriteLine(YMDlabel, &freemono.Regular12pt7b, 0, 18, ymd, white)
+				display.DrawRGBBitmap(0, 0, YMDlabel.Buf, YMDlabel.W, YMDlabel.H)
+				HMSlabel.FillScreen(glay)
+				tinyfont.WriteLine(HMSlabel, &freemono.Regular12pt7b, 0, 18, hms, white)
+				display.DrawRGBBitmap(0, 24, HMSlabel.Buf, HMSlabel.W, HMSlabel.H)
+			}
+
+			hms_before = hms
+
 		} else {
-			YMDlabel.FillScreen(glay)
-			tinyfont.WriteLine(YMDlabel, &freemono.Regular12pt7b, 0, 18, ymd, white)
-			display.DrawRGBBitmap(0, 0, YMDlabel.Buf, YMDlabel.W, YMDlabel.H)
-			HMSlabel.FillScreen(glay)
-			tinyfont.WriteLine(HMSlabel, &freemono.Regular12pt7b, 0, 18, hms, white)
-			display.DrawRGBBitmap(0, 24, HMSlabel.Buf, HMSlabel.W, HMSlabel.H)
+			// ここに時間を設定する処理を書く
+			display.FillScreen(black)
 		}
-		hms_before = hms
-
 		time.Sleep(10 * time.Millisecond)
 	}
 }
