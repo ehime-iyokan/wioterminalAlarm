@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"log"
 	"strings"
@@ -36,19 +35,25 @@ func main() {
 	YMDlabel.FillScreen(glay)
 	HMSlabel.FillScreen(glay)
 
+	hms_before := ""
 	for {
-		time.Sleep(1 * time.Second)
 		timeNow := fetchStringNowJst()
-		fmt.Println(timeNow)
 		array := strings.Split(timeNow, " ")
 		ymd := array[0]
 		hms := array[1]
 
-		YMDlabel.FillScreen(glay)
-		tinyfont.WriteLine(YMDlabel, &freemono.Regular12pt7b, 0, 18, ymd, white)
-		display.DrawRGBBitmap(0, 0, YMDlabel.Buf, YMDlabel.W, YMDlabel.H)
-		HMSlabel.FillScreen(glay)
-		tinyfont.WriteLine(HMSlabel, &freemono.Regular12pt7b, 0, 18, hms, white)
-		display.DrawRGBBitmap(0, 24, HMSlabel.Buf, HMSlabel.W, HMSlabel.H)
+		if hms_before == hms {
+			// 何もしない
+		} else {
+			YMDlabel.FillScreen(glay)
+			tinyfont.WriteLine(YMDlabel, &freemono.Regular12pt7b, 0, 18, ymd, white)
+			display.DrawRGBBitmap(0, 0, YMDlabel.Buf, YMDlabel.W, YMDlabel.H)
+			HMSlabel.FillScreen(glay)
+			tinyfont.WriteLine(HMSlabel, &freemono.Regular12pt7b, 0, 18, hms, white)
+			display.DrawRGBBitmap(0, 24, HMSlabel.Buf, HMSlabel.W, HMSlabel.H)
+		}
+		hms_before = hms
+
+		time.Sleep(10 * time.Millisecond)
 	}
 }
