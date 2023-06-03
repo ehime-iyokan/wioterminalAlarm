@@ -50,6 +50,19 @@ func main() {
 		mode ^= 1
 	})
 
+	pwm := machine.TCC0
+	pwm.Configure(machine.PWMConfig{})
+	channelA, _ := pwm.Channel(machine.BUZZER_CTR)
+	pwm.SetPeriod(uint64(1e9) / 440)
+
+	AlermON := 0
+	button_2 := machine.BUTTON_2
+	button_2.Configure(machine.PinConfig{Mode: machine.PinInput})
+	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
+		AlermON = 0
+		pwm.Set(channelA, 0)
+	})
+
 	crosskey := CrossKey{
 		push:  machine.SWITCH_U,
 		up:    machine.SWITCH_X,
@@ -65,13 +78,13 @@ func main() {
 	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if flgAlermSetting == 0 {
-			if alermMinute < 59 {
+			if 0 <= alermMinute && alermMinute < 59 {
 				alermMinute++
 			} else {
 				alermMinute = 0
 			}
 		} else {
-			if alermHour < 23 {
+			if 0 <= alermHour && alermHour < 23 {
 				alermHour++
 			} else {
 				alermHour = 0
@@ -81,13 +94,13 @@ func main() {
 	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if flgAlermSetting == 0 {
-			if alermMinute > 0 {
+			if 0 < alermMinute && alermMinute <= 59 {
 				alermMinute--
 			} else {
 				alermMinute = 59
 			}
 		} else {
-			if alermHour > 0 {
+			if 0 < alermHour && alermHour <= 23 {
 				alermHour--
 			} else {
 				alermHour = 23
@@ -119,6 +132,17 @@ func main() {
 
 			timeNowString := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
 				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
+
+			if timeNow.Hour() == alermHour && timeNow.Minute() == alermMinute {
+				AlermON = 1
+				alermHour = 88
+				alermMinute = 88
+				pwm.Set(channelA, pwm.Top()/4)
+			}
+
+			if AlermON == 1 {
+				timeNowString = timeNowString + "\n!Alerm-ON!"
+			}
 
 			if timeNow.Second() == timeNowBefore.Second() {
 				// 何もしない
