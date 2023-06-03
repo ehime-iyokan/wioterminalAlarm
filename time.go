@@ -67,10 +67,7 @@ type UARTx struct {
 	*machine.UART
 }
 
-func fetchStringNowJst() string {
+func fetchStringNowJst() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
-	now := time.Now()
-	nowUTC := now.UTC()
-	nowJST := nowUTC.In(jst)
-	return nowJST.Format("2006/01/02 15:04:05")
+	return time.Now().UTC().In(jst)
 }

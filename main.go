@@ -5,8 +5,6 @@ import (
 	"image/color"
 	"log"
 	"machine"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sago35/tinydisplay/examples/initdisplay"
@@ -41,8 +39,7 @@ func main() {
 	glay := color.RGBA{R: 0x88, G: 0x88, B: 0x88, A: 0xFF}
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 	display.FillScreen(black)
-	YMDlabel := NewLabel(24, 320)
-	HMSlabel := NewLabel(24, 320)
+	labelTimeNow := NewLabel(72, 320)
 	SettingAlermlabel := NewLabel(48, 320)
 
 	// mode = 0:時間設定モード, 1:時間表示モード
@@ -60,106 +57,99 @@ func main() {
 		right: machine.SWITCH_Z,
 		left:  machine.SWITCH_Y,
 	}
-	// alermtime_select_flg = 0:秒調整, 1:時間調整
-	alermtime_select_flg := 0
-	alermtime_second := 0
-	alermtime_hour := 0
+	// flgAlermSetting = 0:秒調整, 1:時間調整
+	flgAlermSetting := 0
+	alermMinute := 0
+	alermHour := 0
 
 	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if alermtime_select_flg == 0 {
-			if alermtime_second < 59 {
-				alermtime_second++
+		if flgAlermSetting == 0 {
+			if alermMinute < 59 {
+				alermMinute++
 			} else {
-				alermtime_second = 0
+				alermMinute = 0
 			}
 		} else {
-			if alermtime_hour < 23 {
-				alermtime_hour++
+			if alermHour < 23 {
+				alermHour++
 			} else {
-				alermtime_hour = 0
+				alermHour = 0
 			}
 		}
 	})
 	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if alermtime_select_flg == 0 {
-			if alermtime_second > 0 {
-				alermtime_second--
+		if flgAlermSetting == 0 {
+			if alermMinute > 0 {
+				alermMinute--
 			} else {
-				alermtime_second = 59
+				alermMinute = 59
 			}
 		} else {
-			if alermtime_hour > 0 {
-				alermtime_hour--
+			if alermHour > 0 {
+				alermHour--
 			} else {
-				alermtime_hour = 23
+				alermHour = 23
 			}
 		}
 
 	})
 	crosskey.left.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.left.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alermtime_select_flg ^= 1
+		flgAlermSetting ^= 1
 	})
 	crosskey.right.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.right.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alermtime_select_flg ^= 1
+		flgAlermSetting ^= 1
 	})
 
-	mode_before := 0
-	hms_before := ""
-	alermtime_string_before := ""
+	timeNow := fetchStringNowJst()
+	timeNowBefore := timeNow
+	timeAlermStringBefore := ""
+	modeBefore := 0
 
 	for {
+		timeNow = fetchStringNowJst()
+
 		if mode == 1 {
-			if mode_before == 0 {
-				YMDlabel.FillScreen(glay)
-				HMSlabel.FillScreen(glay)
+			if modeBefore == 0 {
+				labelTimeNow.FillScreen(glay)
 			}
 
-			timeNow := fetchStringNowJst()
-			array := strings.Split(timeNow, " ")
-			ymd := array[0]
-			hms := array[1]
+			timeNowString := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
+				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
 
-			if hms_before == hms {
+			if timeNow.Second() == timeNowBefore.Second() {
 				// 何もしない
 			} else {
-				YMDlabel.FillScreen(glay)
-				tinyfont.WriteLine(YMDlabel, &freemono.Regular12pt7b, 0, 18, ymd, white)
-				display.DrawRGBBitmap(0, 0, YMDlabel.Buf, YMDlabel.W, YMDlabel.H)
-				HMSlabel.FillScreen(glay)
-				tinyfont.WriteLine(HMSlabel, &freemono.Regular12pt7b, 0, 18, hms, white)
-				display.DrawRGBBitmap(0, 24, HMSlabel.Buf, HMSlabel.W, HMSlabel.H)
+				labelTimeNow.FillScreen(glay)
+				tinyfont.WriteLine(labelTimeNow, &freemono.Regular12pt7b, 0, 18, timeNowString, white)
+				display.DrawRGBBitmap(0, 0, labelTimeNow.Buf, labelTimeNow.W, labelTimeNow.H)
 			}
-
-			hms_before = hms
-
 		} else {
-			str_hour := strconv.Itoa(alermtime_hour)
-			str_second := strconv.Itoa(alermtime_second)
-			alermtime_string := fmt.Sprintf("setting alerm\n%02s:%02s", str_hour, str_second)
+			timeAlermString := fmt.Sprintf("setting alerm\n%02d:%02d", alermHour, alermMinute)
 
-			if mode_before == 1 {
+			if modeBefore == 1 {
 				display.FillScreen(black)
 				SettingAlermlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, alermtime_string, white)
+				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, timeAlermString, white)
 				display.DrawRGBBitmap(0, 0, SettingAlermlabel.Buf, SettingAlermlabel.W, SettingAlermlabel.H)
 			}
 
-			if alermtime_string == alermtime_string_before {
+			if timeAlermString == timeAlermStringBefore {
 				// 何もしない
 			} else {
 				SettingAlermlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, alermtime_string, white)
+				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, timeAlermString, white)
 				display.DrawRGBBitmap(0, 0, SettingAlermlabel.Buf, SettingAlermlabel.W, SettingAlermlabel.H)
 			}
 
-			alermtime_string_before = alermtime_string
+			timeAlermStringBefore = timeAlermString
 		}
 
-		mode_before = mode
+		modeBefore = mode
+		timeNowBefore = timeNow
 
 		time.Sleep(10 * time.Millisecond)
 	}
