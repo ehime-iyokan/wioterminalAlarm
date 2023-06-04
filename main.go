@@ -31,7 +31,7 @@ func main() {
 
 	display := initdisplay.InitDisplay()
 	display.FillScreen(white)
-	_, err := AdjustTime(ssid, password, 10*time.Millisecond)
+	_, err := AdjustTimeUsingWifi(ssid, password, 10*time.Millisecond)
 	if err != nil {
 		log.Fatal(err)
 	}
