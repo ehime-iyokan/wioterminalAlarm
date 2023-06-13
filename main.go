@@ -172,7 +172,7 @@ func main() {
 			timeAlarmStringBefore = timeAlarmString
 
 			// 年月日は同期させる。日付が変わってもアラームが鳴るようにするため
-			timeAlarm = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeAlarm.Hour(), timeAlarm.Minute(), timeNow.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
+			timeAlarm = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeAlarm.Hour(), timeAlarm.Minute(), timeAlarm.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 		}
 
 		modeBefore = mode
