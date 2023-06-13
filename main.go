@@ -123,7 +123,7 @@ func main() {
 	modeBefore := 0
 
 	for {
-		timeNow = fetchStringNowJst()
+		timeNow = fetchTimeNowJst()
 
 		if mode == 1 {
 			// 時間表示モード
