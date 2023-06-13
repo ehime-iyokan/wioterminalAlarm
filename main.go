@@ -33,8 +33,8 @@ func main() {
 
 	// mode = 0:時間設定モード, 1:時間表示モード
 	mode := 1
-	alarmRinging := 0
 	modeBefore := 0
+	alarmRinging := 0
 
 	crosskey := CrossKey{
 		push:  machine.SWITCH_U,
@@ -46,7 +46,8 @@ func main() {
 
 	// selectorAlarmTime = 0:秒調整, 1:時間調整
 	selectorAlarmTime := 0
-	timeAlarm := fetchTimeDefaultAlarmTime()
+	timeAlarm := time.Time{}
+	timeAlarmBefore := time.Time{}
 	minuteIncrementer, _ := time.ParseDuration("1m")
 	hourIncrementer, _ := time.ParseDuration("1h")
 	minuteDecrementer, _ := time.ParseDuration("-1m")
@@ -54,7 +55,6 @@ func main() {
 
 	timeNow := time.Time{}
 	timeNowBefore := time.Time{}
-	timeAlarmStringBefore := ""
 
 	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
@@ -140,7 +140,7 @@ func main() {
 				timeNowString = timeNowString + "\n!Alarm-ON!"
 			}
 
-			if timeNow.Second() == timeNowBefore.Second() {
+			if timeNow.Equal(timeNowBefore) {
 				// 何もしない
 			} else {
 				// 情報に変更があれば表示内容を更新する
@@ -160,7 +160,7 @@ func main() {
 				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			if timeAlarmString == timeAlarmStringBefore {
+			if timeAlarm.Equal(timeAlarmBefore) {
 				// 何もしない
 			} else {
 				// 情報に変更があれば表示内容を更新する
@@ -169,14 +169,13 @@ func main() {
 				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			timeAlarmStringBefore = timeAlarmString
-
 			// 年月日は同期させる。日付が変わってもアラームが鳴るようにするため
 			timeAlarm = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeAlarm.Hour(), timeAlarm.Minute(), timeAlarm.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 		}
 
 		modeBefore = mode
 		timeNowBefore = timeNow
+		timeAlarmBefore = timeAlarm
 
 		time.Sleep(10 * time.Millisecond)
 	}
