@@ -31,6 +31,32 @@ func main() {
 	glay := color.RGBA{R: 0x88, G: 0x88, B: 0x88, A: 0xFF}
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 
+	// mode = 0:時間設定モード, 1:時間表示モード
+	mode := 1
+	alarmRinging := 0
+	modeBefore := 0
+
+	crosskey := CrossKey{
+		push:  machine.SWITCH_U,
+		up:    machine.SWITCH_X,
+		down:  machine.SWITCH_B,
+		right: machine.SWITCH_Z,
+		left:  machine.SWITCH_Y,
+	}
+
+	// selectorAlarmTime = 0:秒調整, 1:時間調整
+	selectorAlarmTime := 0
+	timeAlarm := fetchTimeDefaultAlarmTime()
+	minuteIncrementer, _ := time.ParseDuration("1m")
+	hourIncrementer, _ := time.ParseDuration("1h")
+	minuteDecrementer, _ := time.ParseDuration("-1m")
+	hourDecrementer, _ := time.ParseDuration("-1h")
+
+	timeNow := time.Time{}
+	timeNowBefore := time.Time{}
+	timeAlarmStringBefore := ""
+
+	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
 	display.FillScreen(white)
 	_, err := AdjustTimeUsingWifi(ssid, password, 10*time.Millisecond)
@@ -42,8 +68,6 @@ func main() {
 	labelTimeNow := NewLabel(72, 320)
 	SettingAlarmlabel := NewLabel(48, 320)
 
-	// mode = 0:時間設定モード, 1:時間表示モード
-	mode := 1
 	button_3 := machine.BUTTON_3
 	button_3.Configure(machine.PinConfig{Mode: machine.PinInput})
 	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
@@ -55,7 +79,6 @@ func main() {
 	channelA, _ := pwm.Channel(machine.BUZZER_CTR)
 	pwm.SetPeriod(uint64(1e9) / 440)
 
-	alarmRinging := 0
 	button_2 := machine.BUTTON_2
 	button_2.Configure(machine.PinConfig{Mode: machine.PinInput})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
@@ -63,48 +86,20 @@ func main() {
 		pwm.Set(channelA, 0)
 	})
 
-	crosskey := CrossKey{
-		push:  machine.SWITCH_U,
-		up:    machine.SWITCH_X,
-		down:  machine.SWITCH_B,
-		right: machine.SWITCH_Z,
-		left:  machine.SWITCH_Y,
-	}
-	// selectorAlarmTime = 0:秒調整, 1:時間調整
-	selectorAlarmTime := 0
-	alarmMinute := 0
-	alarmHour := 0
-
 	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if selectorAlarmTime == 0 {
-			if 0 <= alarmMinute && alarmMinute < 59 {
-				alarmMinute++
-			} else {
-				alarmMinute = 0
-			}
+			timeAlarm = timeAlarm.Add(minuteIncrementer)
 		} else {
-			if 0 <= alarmHour && alarmHour < 23 {
-				alarmHour++
-			} else {
-				alarmHour = 0
-			}
+			timeAlarm = timeAlarm.Add(hourIncrementer)
 		}
 	})
 	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if selectorAlarmTime == 0 {
-			if 0 < alarmMinute && alarmMinute <= 59 {
-				alarmMinute--
-			} else {
-				alarmMinute = 59
-			}
+			timeAlarm = timeAlarm.Add(minuteDecrementer)
 		} else {
-			if 0 < alarmHour && alarmHour <= 23 {
-				alarmHour--
-			} else {
-				alarmHour = 23
-			}
+			timeAlarm = timeAlarm.Add(hourDecrementer)
 		}
 
 	})
@@ -117,10 +112,10 @@ func main() {
 		selectorAlarmTime ^= 1
 	})
 
-	timeNow := time.Time{}
-	timeNowBefore := timeNow
-	timeAlarmStringBefore := ""
-	modeBefore := 0
+	// ハードウェア設定処理終了 ---------------------------------------------------------
+
+	// ループ処理開始 ------------------------------------------------------------------
+	timeAlarm = fetchTimeDefaultAlarmTime()
 
 	for {
 		timeNow = fetchTimeNowJst()
@@ -132,10 +127,10 @@ func main() {
 				labelTimeNow.FillScreen(glay)
 			}
 
-			if timeNow.Hour() == alarmHour && timeNow.Minute() == alarmMinute {
+			// ns単位までは比較は行わない
+			timeNow = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
+			if timeNow.Equal(timeAlarm) {
 				alarmRinging = 1
-				alarmHour = 88
-				alarmMinute = 88
 				pwm.Set(channelA, pwm.Top()/4)
 			}
 
@@ -155,7 +150,7 @@ func main() {
 			}
 		} else {
 			// 時間設定モード
-			timeAlarmString := fmt.Sprintf("setting alarm\n%02d:%02d", alarmHour, alarmMinute)
+			timeAlarmString := fmt.Sprintf("setting alarm\n%02d:%02d", timeAlarm.Hour(), timeAlarm.Minute())
 
 			if modeBefore == 1 {
 				// 画面遷移直後の処理
@@ -175,6 +170,9 @@ func main() {
 			}
 
 			timeAlarmStringBefore = timeAlarmString
+
+			// 年月日は同期させる。日付が変わってもアラームが鳴るようにするため
+			timeAlarm = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeAlarm.Hour(), timeAlarm.Minute(), timeNow.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 		}
 
 		modeBefore = mode
