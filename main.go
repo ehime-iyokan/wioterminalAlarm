@@ -40,7 +40,7 @@ func main() {
 
 	display.FillScreen(black)
 	labelTimeNow := NewLabel(72, 320)
-	SettingAlermlabel := NewLabel(48, 320)
+	SettingAlarmlabel := NewLabel(48, 320)
 
 	// mode = 0:時間設定モード, 1:時間表示モード
 	mode := 1
@@ -55,11 +55,11 @@ func main() {
 	channelA, _ := pwm.Channel(machine.BUZZER_CTR)
 	pwm.SetPeriod(uint64(1e9) / 440)
 
-	alermRinging := 0
+	alarmRinging := 0
 	button_2 := machine.BUTTON_2
 	button_2.Configure(machine.PinConfig{Mode: machine.PinInput})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alermRinging = 0
+		alarmRinging = 0
 		pwm.Set(channelA, 0)
 	})
 
@@ -70,56 +70,56 @@ func main() {
 		right: machine.SWITCH_Z,
 		left:  machine.SWITCH_Y,
 	}
-	// selectorAlermTime = 0:秒調整, 1:時間調整
-	selectorAlermTime := 0
-	alermMinute := 0
-	alermHour := 0
+	// selectorAlarmTime = 0:秒調整, 1:時間調整
+	selectorAlarmTime := 0
+	alarmMinute := 0
+	alarmHour := 0
 
 	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if selectorAlermTime == 0 {
-			if 0 <= alermMinute && alermMinute < 59 {
-				alermMinute++
+		if selectorAlarmTime == 0 {
+			if 0 <= alarmMinute && alarmMinute < 59 {
+				alarmMinute++
 			} else {
-				alermMinute = 0
+				alarmMinute = 0
 			}
 		} else {
-			if 0 <= alermHour && alermHour < 23 {
-				alermHour++
+			if 0 <= alarmHour && alarmHour < 23 {
+				alarmHour++
 			} else {
-				alermHour = 0
+				alarmHour = 0
 			}
 		}
 	})
 	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if selectorAlermTime == 0 {
-			if 0 < alermMinute && alermMinute <= 59 {
-				alermMinute--
+		if selectorAlarmTime == 0 {
+			if 0 < alarmMinute && alarmMinute <= 59 {
+				alarmMinute--
 			} else {
-				alermMinute = 59
+				alarmMinute = 59
 			}
 		} else {
-			if 0 < alermHour && alermHour <= 23 {
-				alermHour--
+			if 0 < alarmHour && alarmHour <= 23 {
+				alarmHour--
 			} else {
-				alermHour = 23
+				alarmHour = 23
 			}
 		}
 
 	})
 	crosskey.left.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.left.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		selectorAlermTime ^= 1
+		selectorAlarmTime ^= 1
 	})
 	crosskey.right.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.right.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		selectorAlermTime ^= 1
+		selectorAlarmTime ^= 1
 	})
 
 	timeNow := time.Time{}
 	timeNowBefore := timeNow
-	timeAlermStringBefore := ""
+	timeAlarmStringBefore := ""
 	modeBefore := 0
 
 	for {
@@ -132,17 +132,17 @@ func main() {
 				labelTimeNow.FillScreen(glay)
 			}
 
-			if timeNow.Hour() == alermHour && timeNow.Minute() == alermMinute {
-				alermRinging = 1
-				alermHour = 88
-				alermMinute = 88
+			if timeNow.Hour() == alarmHour && timeNow.Minute() == alarmMinute {
+				alarmRinging = 1
+				alarmHour = 88
+				alarmMinute = 88
 				pwm.Set(channelA, pwm.Top()/4)
 			}
 
 			timeNowString := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
 				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
-			if alermRinging == 1 {
-				timeNowString = timeNowString + "\n!Alerm-ON!"
+			if alarmRinging == 1 {
+				timeNowString = timeNowString + "\n!Alarm-ON!"
 			}
 
 			if timeNow.Second() == timeNowBefore.Second() {
@@ -155,26 +155,26 @@ func main() {
 			}
 		} else {
 			// 時間設定モード
-			timeAlermString := fmt.Sprintf("setting alerm\n%02d:%02d", alermHour, alermMinute)
+			timeAlarmString := fmt.Sprintf("setting alarm\n%02d:%02d", alarmHour, alarmMinute)
 
 			if modeBefore == 1 {
 				// 画面遷移直後の処理
 				display.FillScreen(black)
-				SettingAlermlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, timeAlermString, white)
-				display.DrawRGBBitmap(0, 0, SettingAlermlabel.Buf, SettingAlermlabel.W, SettingAlermlabel.H)
+				SettingAlarmlabel.FillScreen(glay)
+				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, timeAlarmString, white)
+				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			if timeAlermString == timeAlermStringBefore {
+			if timeAlarmString == timeAlarmStringBefore {
 				// 何もしない
 			} else {
 				// 情報に変更があれば表示内容を更新する
-				SettingAlermlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlermlabel, &freemono.Regular12pt7b, 0, 18, timeAlermString, white)
-				display.DrawRGBBitmap(0, 0, SettingAlermlabel.Buf, SettingAlermlabel.W, SettingAlermlabel.H)
+				SettingAlarmlabel.FillScreen(glay)
+				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, timeAlarmString, white)
+				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			timeAlermStringBefore = timeAlermString
+			timeAlarmStringBefore = timeAlarmString
 		}
 
 		modeBefore = mode
