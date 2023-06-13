@@ -143,7 +143,7 @@ func main() {
 			if timeNow.Equal(timeNowBefore) {
 				// 何もしない
 			} else {
-				// 情報に変更があれば表示内容を更新する
+				// 情報に変化があれば表示内容を更新する
 				labelTimeNow.FillScreen(glay)
 				tinyfont.WriteLine(labelTimeNow, &freemono.Regular12pt7b, 0, 18, timeNowString, white)
 				display.DrawRGBBitmap(0, 0, labelTimeNow.Buf, labelTimeNow.W, labelTimeNow.H)
@@ -163,7 +163,7 @@ func main() {
 			if timeAlarm.Equal(timeAlarmBefore) {
 				// 何もしない
 			} else {
-				// 情報に変更があれば表示内容を更新する
+				// 情報に変化があれば表示内容を更新する
 				SettingAlarmlabel.FillScreen(glay)
 				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, timeAlarmString, white)
 				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
