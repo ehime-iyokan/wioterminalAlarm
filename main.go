@@ -36,14 +36,6 @@ func main() {
 	modeBefore := 0
 	alarmRinging := 0
 
-	crosskey := CrossKey{
-		push:  machine.SWITCH_U,
-		up:    machine.SWITCH_X,
-		down:  machine.SWITCH_B,
-		right: machine.SWITCH_Z,
-		left:  machine.SWITCH_Y,
-	}
-
 	// selectorAlarmTime = 0:秒調整, 1:時間調整
 	selectorAlarmTime := 0
 	timeAlarm := time.Time{}
@@ -59,6 +51,7 @@ func main() {
 	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
 	display.FillScreen(white)
+
 	_, err := AdjustTimeUsingWifi(ssid, password, 10*time.Millisecond)
 	if err != nil {
 		log.Fatal(err)
@@ -68,25 +61,41 @@ func main() {
 	labelTimeNow := NewLabel(72, 320)
 	SettingAlarmlabel := NewLabel(48, 320)
 
-	button_3 := machine.BUTTON_3
-	button_3.Configure(machine.PinConfig{Mode: machine.PinInput})
-	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		mode ^= 1
-	})
-
 	pwm := machine.TCC0
 	pwm.Configure(machine.PWMConfig{})
 	channelA, _ := pwm.Channel(machine.BUZZER_CTR)
 	pwm.SetPeriod(uint64(1e9) / 440)
 
+	button_3 := machine.BUTTON_3
 	button_2 := machine.BUTTON_2
+
+	button_3.Configure(machine.PinConfig{Mode: machine.PinInput})
 	button_2.Configure(machine.PinConfig{Mode: machine.PinInput})
+
+	crosskey := CrossKey{
+		push:  machine.SWITCH_U,
+		up:    machine.SWITCH_X,
+		down:  machine.SWITCH_B,
+		right: machine.SWITCH_Z,
+		left:  machine.SWITCH_Y,
+	}
+
+	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
+	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
+	crosskey.left.Configure(machine.PinConfig{Mode: machine.PinInput})
+	crosskey.right.Configure(machine.PinConfig{Mode: machine.PinInput})
+
+	// ハードウェア設定処理終了 ---------------------------------------------------------
+
+	// 割り込み処理設定開始 ------------------------------------------------------------
+	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
+		mode ^= 1
+	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		alarmRinging = 0
 		pwm.Set(channelA, 0)
 	})
 
-	crosskey.up.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if selectorAlarmTime == 0 {
 			timeAlarm = timeAlarm.Add(minuteIncrementer)
@@ -94,25 +103,20 @@ func main() {
 			timeAlarm = timeAlarm.Add(hourIncrementer)
 		}
 	})
-	crosskey.down.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		if selectorAlarmTime == 0 {
 			timeAlarm = timeAlarm.Add(minuteDecrementer)
 		} else {
 			timeAlarm = timeAlarm.Add(hourDecrementer)
 		}
-
 	})
-	crosskey.left.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.left.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		selectorAlarmTime ^= 1
 	})
-	crosskey.right.Configure(machine.PinConfig{Mode: machine.PinInput})
 	crosskey.right.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		selectorAlarmTime ^= 1
 	})
-
-	// ハードウェア設定処理終了 ---------------------------------------------------------
+	// 割り込み処理設定終了 ------------------------------------------------------------
 
 	// ループ処理開始 ------------------------------------------------------------------
 	timeAlarm = fetchTimeDefaultAlarmTime()
