@@ -72,10 +72,3 @@ func fetchTimeNowJst() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 	return time.Now().UTC().In(jst)
 }
-
-// アラームにセットするデフォルトの時間を取得する ( AdjustTimeUsingWifi() より後に呼ぶ必要がある )
-func fetchTimeDefaultAlarmTime() time.Time {
-	t := fetchTimeNowJst()
-	// 秒の位は 0 に設定する。アラームを鳴らす判定をする際に秒単位で判定を行うため
-	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
-}

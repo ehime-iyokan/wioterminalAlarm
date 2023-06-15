@@ -25,25 +25,53 @@ type CrossKey struct {
 	right machine.Pin
 	left  machine.Pin
 }
+type Alarm struct {
+	// mode = 0:時間表示モード, 1:時間設定モード
+	mode       int
+	modeBefore int
+	// alarm.selectorTime = 0:秒調整, 1:時間調整
+	selectorTime int
+	ringing      bool
+	time         time.Time
+	timeBefore   time.Time
+}
+
+func (a *Alarm) timeIncrement() {
+	if a.selectorTime == 0 {
+		minuteIncrementer, _ := time.ParseDuration("1m")
+		a.time = a.time.Add(minuteIncrementer)
+	} else {
+		hourIncrementer, _ := time.ParseDuration("1h")
+		a.time = a.time.Add(hourIncrementer)
+	}
+}
+
+func (a *Alarm) timeDecrement() {
+	if a.selectorTime == 0 {
+		minuteDecrementer, _ := time.ParseDuration("-1m")
+		a.time = a.time.Add(minuteDecrementer)
+	} else {
+		hourDecrementer, _ := time.ParseDuration("-1h")
+		a.time = a.time.Add(hourDecrementer)
+	}
+}
+
+func (a *Alarm) setDefaultTime(t time.Time) {
+	// 秒の位は 0 に設定する。アラームを鳴らす判定をする際に秒単位で判定を行うため
+	a.time = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+
+}
+
+func (a *Alarm) ajustDay(t time.Time) {
+	a.time = time.Date(t.Year(), t.Month(), t.Day(), a.time.Hour(), a.time.Minute(), a.time.Second(), 0, t.Location())
+}
 
 func main() {
 	white := color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	glay := color.RGBA{R: 0x88, G: 0x88, B: 0x88, A: 0xFF}
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 
-	// mode = 0:時間設定モード, 1:時間表示モード
-	mode := 1
-	modeBefore := 0
-	alarmRinging := 0
-
-	// selectorAlarmTime = 0:秒調整, 1:時間調整
-	selectorAlarmTime := 0
-	timeAlarm := time.Time{}
-	timeAlarmBefore := time.Time{}
-	minuteIncrementer, _ := time.ParseDuration("1m")
-	hourIncrementer, _ := time.ParseDuration("1h")
-	minuteDecrementer, _ := time.ParseDuration("-1m")
-	hourDecrementer, _ := time.ParseDuration("-1h")
+	alarm := Alarm{}
 
 	timeNow := time.Time{}
 	timeNowBefore := time.Time{}
@@ -89,59 +117,51 @@ func main() {
 
 	// 割り込み処理設定開始 ------------------------------------------------------------
 	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		mode ^= 1
+		alarm.mode ^= 1
 	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarmRinging = 0
+		alarm.ringing = false
 		pwm.Set(channelA, 0)
 	})
 
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if selectorAlarmTime == 0 {
-			timeAlarm = timeAlarm.Add(minuteIncrementer)
-		} else {
-			timeAlarm = timeAlarm.Add(hourIncrementer)
-		}
+		alarm.timeIncrement()
 	})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		if selectorAlarmTime == 0 {
-			timeAlarm = timeAlarm.Add(minuteDecrementer)
-		} else {
-			timeAlarm = timeAlarm.Add(hourDecrementer)
-		}
+		alarm.timeDecrement()
 	})
 	crosskey.left.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		selectorAlarmTime ^= 1
+		alarm.selectorTime ^= 1
 	})
 	crosskey.right.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		selectorAlarmTime ^= 1
+		alarm.selectorTime ^= 1
 	})
 	// 割り込み処理設定終了 ------------------------------------------------------------
 
 	// ループ処理開始 ------------------------------------------------------------------
-	timeAlarm = fetchTimeDefaultAlarmTime()
+	alarm.setDefaultTime(fetchTimeNowJst())
 
 	for {
 		timeNow = fetchTimeNowJst()
 
-		if mode == 1 {
+		if alarm.mode == 0 {
 			// 時間表示モード
-			if modeBefore == 0 {
+			if alarm.modeBefore == 1 {
 				// 画面遷移直後の処理
 				labelTimeNow.FillScreen(glay)
 			}
 
 			// ns単位までは比較は行わない
-			timeNow = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
-			if timeNow.Equal(timeAlarm) {
-				alarmRinging = 1
+			timeNow = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second(), 0, timeNow.Location())
+			if timeNow.Equal(alarm.time) {
+				alarm.ringing = true
 				pwm.Set(channelA, pwm.Top()/4)
 			}
 
-			timeNowString := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
+			stringTimeNow := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
 				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
-			if alarmRinging == 1 {
-				timeNowString = timeNowString + "\n!Alarm-ON!"
+			if alarm.ringing == true {
+				stringTimeNow = stringTimeNow + "\n!Alarm-ON!"
 			}
 
 			if timeNow.Equal(timeNowBefore) {
@@ -149,37 +169,37 @@ func main() {
 			} else {
 				// 情報に変化があれば表示内容を更新する
 				labelTimeNow.FillScreen(glay)
-				tinyfont.WriteLine(labelTimeNow, &freemono.Regular12pt7b, 0, 18, timeNowString, white)
+				tinyfont.WriteLine(labelTimeNow, &freemono.Regular12pt7b, 0, 18, stringTimeNow, white)
 				display.DrawRGBBitmap(0, 0, labelTimeNow.Buf, labelTimeNow.W, labelTimeNow.H)
 			}
 		} else {
 			// 時間設定モード
-			timeAlarmString := fmt.Sprintf("setting alarm\n%02d:%02d", timeAlarm.Hour(), timeAlarm.Minute())
+			stringTimeAlarm := fmt.Sprintf("setting alarm\n%02d:%02d", alarm.time.Hour(), alarm.time.Minute())
 
-			if modeBefore == 1 {
+			if alarm.modeBefore == 0 {
 				// 画面遷移直後の処理
 				display.FillScreen(black)
 				SettingAlarmlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, timeAlarmString, white)
+				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
 				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			if timeAlarm.Equal(timeAlarmBefore) {
+			if alarm.time.Equal(alarm.timeBefore) {
 				// 何もしない
 			} else {
 				// 情報に変化があれば表示内容を更新する
 				SettingAlarmlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, timeAlarmString, white)
+				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
 				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
 			}
 
-			// 年月日は同期させる。日付が変わってもアラームが鳴るようにするため
-			timeAlarm = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeAlarm.Hour(), timeAlarm.Minute(), timeAlarm.Second(), 0, time.FixedZone("Asia/Tokyo", 9*60*60))
+			// 年月日を同期させる。日付が変わってもアラームが鳴るようにするため
+			alarm.ajustDay(timeNow)
 		}
 
-		modeBefore = mode
 		timeNowBefore = timeNow
-		timeAlarmBefore = timeAlarm
+		alarm.modeBefore = alarm.mode
+		alarm.timeBefore = alarm.time
 
 		time.Sleep(10 * time.Millisecond)
 	}
