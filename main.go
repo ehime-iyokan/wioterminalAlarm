@@ -32,9 +32,8 @@ func main() {
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 
 	alarm := Alarm{}
-
-	timeNow := time.Time{}
-	timeNowBefore := time.Time{}
+	// mode = 0:時間表示モード, 1:時間設定モード
+	mode := 0
 
 	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
@@ -76,7 +75,7 @@ func main() {
 
 	// 割り込み処理設定開始 ------------------------------------------------------------
 	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.mode ^= 1
+		mode ^= 1
 	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		alarm.ringing = false
@@ -100,12 +99,16 @@ func main() {
 	// ループ処理開始 ------------------------------------------------------------------
 	alarm.setDefaultTime(fetchTimeNowJst())
 
-	for {
-		timeNow = fetchTimeNowJst()
+	modeBefore := 0
+	timeAlarmBefore := time.Time{}
+	timeNowBefore := time.Time{}
 
-		if alarm.mode == 0 {
+	for {
+		timeNow := fetchTimeNowJst()
+
+		if mode == 0 {
 			// 時間表示モード
-			if alarm.modeBefore == 1 {
+			if modeBefore == 1 {
 				// 画面遷移直後の処理
 				labelTime.FillScreen(glay)
 			}
@@ -133,14 +136,14 @@ func main() {
 			// 時間設定モード
 			stringTimeAlarm := fmt.Sprintf("setting alarm\n%02d:%02d", alarm.time.Hour(), alarm.time.Minute())
 
-			if alarm.modeBefore == 0 {
+			if modeBefore == 0 {
 				// 画面遷移直後の処理
 				labelTime.FillScreen(glay)
 				tinyfont.WriteLine(labelTime, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
 				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
-			if alarm.time.Equal(alarm.timeBefore) {
+			if alarm.time.Equal(timeAlarmBefore) {
 				// 何もしない
 			} else {
 				// 情報に変化があれば表示内容を更新する
@@ -154,8 +157,8 @@ func main() {
 		}
 
 		timeNowBefore = timeNow
-		alarm.modeBefore = alarm.mode
-		alarm.timeBefore = alarm.time
+		modeBefore = mode
+		timeAlarmBefore = alarm.time
 
 		time.Sleep(10 * time.Millisecond)
 	}

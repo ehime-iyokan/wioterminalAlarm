@@ -76,14 +76,10 @@ func fetchTimeNowJst() time.Time {
 }
 
 type Alarm struct {
-	// mode = 0:時間表示モード, 1:時間設定モード
-	mode       int
-	modeBefore int
 	// alarm.selectorTime = 0:秒調整, 1:時間調整
 	selectorTime int
 	ringing      bool
 	time         time.Time
-	timeBefore   time.Time
 }
 
 func (a *Alarm) timeIncrement() {
