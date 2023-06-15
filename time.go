@@ -72,3 +72,44 @@ func fetchTimeNowJst() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 	return time.Now().UTC().In(jst)
 }
+
+type Alarm struct {
+	// mode = 0:時間表示モード, 1:時間設定モード
+	mode       int
+	modeBefore int
+	// alarm.selectorTime = 0:秒調整, 1:時間調整
+	selectorTime int
+	ringing      bool
+	time         time.Time
+	timeBefore   time.Time
+}
+
+func (a *Alarm) timeIncrement() {
+	if a.selectorTime == 0 {
+		minuteIncrementer, _ := time.ParseDuration("1m")
+		a.time = a.time.Add(minuteIncrementer)
+	} else {
+		hourIncrementer, _ := time.ParseDuration("1h")
+		a.time = a.time.Add(hourIncrementer)
+	}
+}
+
+func (a *Alarm) timeDecrement() {
+	if a.selectorTime == 0 {
+		minuteDecrementer, _ := time.ParseDuration("-1m")
+		a.time = a.time.Add(minuteDecrementer)
+	} else {
+		hourDecrementer, _ := time.ParseDuration("-1h")
+		a.time = a.time.Add(hourDecrementer)
+	}
+}
+
+func (a *Alarm) setDefaultTime(t time.Time) {
+	// 秒の位は 0 に設定する。アラームを鳴らす判定をする際に秒単位で判定を行うため
+	a.time = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+
+}
+
+func (a *Alarm) ajustDay(t time.Time) {
+	a.time = time.Date(t.Year(), t.Month(), t.Day(), a.time.Hour(), a.time.Minute(), a.time.Second(), 0, t.Location())
+}
