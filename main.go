@@ -46,8 +46,7 @@ func main() {
 	}
 
 	display.FillScreen(black)
-	labelTimeNow := NewLabel(72, 320)
-	SettingAlarmlabel := NewLabel(48, 320)
+	labelTime := NewLabel(72, 320)
 
 	pwm := machine.TCC0
 	pwm.Configure(machine.PWMConfig{})
@@ -108,11 +107,9 @@ func main() {
 			// 時間表示モード
 			if alarm.modeBefore == 1 {
 				// 画面遷移直後の処理
-				labelTimeNow.FillScreen(glay)
+				labelTime.FillScreen(glay)
 			}
 
-			// ns単位までは比較は行わない
-			timeNow = time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second(), 0, timeNow.Location())
 			if timeNow.Equal(alarm.time) {
 				alarm.ringing = true
 				pwm.Set(channelA, pwm.Top()/4)
@@ -128,9 +125,9 @@ func main() {
 				// 何もしない
 			} else {
 				// 情報に変化があれば表示内容を更新する
-				labelTimeNow.FillScreen(glay)
-				tinyfont.WriteLine(labelTimeNow, &freemono.Regular12pt7b, 0, 18, stringTimeNow, white)
-				display.DrawRGBBitmap(0, 0, labelTimeNow.Buf, labelTimeNow.W, labelTimeNow.H)
+				labelTime.FillScreen(glay)
+				tinyfont.WriteLine(labelTime, &freemono.Regular12pt7b, 0, 18, stringTimeNow, white)
+				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 		} else {
 			// 時間設定モード
@@ -138,19 +135,18 @@ func main() {
 
 			if alarm.modeBefore == 0 {
 				// 画面遷移直後の処理
-				display.FillScreen(black)
-				SettingAlarmlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
-				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
+				labelTime.FillScreen(glay)
+				tinyfont.WriteLine(labelTime, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
+				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
 			if alarm.time.Equal(alarm.timeBefore) {
 				// 何もしない
 			} else {
 				// 情報に変化があれば表示内容を更新する
-				SettingAlarmlabel.FillScreen(glay)
-				tinyfont.WriteLine(SettingAlarmlabel, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
-				display.DrawRGBBitmap(0, 0, SettingAlarmlabel.Buf, SettingAlarmlabel.W, SettingAlarmlabel.H)
+				labelTime.FillScreen(glay)
+				tinyfont.WriteLine(labelTime, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
+				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
 			// 年月日を同期させる。日付が変わってもアラームが鳴るようにするため
