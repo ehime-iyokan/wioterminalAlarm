@@ -32,8 +32,7 @@ func main() {
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 
 	alarm := Alarm{}
-	// mode = 0:時間表示モード, 1:時間設定モード
-	mode := 0
+	mode := 0 // mode = 0:時間表示モード, 1:時間設定モード
 
 	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
@@ -78,8 +77,7 @@ func main() {
 		mode ^= 1
 	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.ringing = false
-		pwm.Set(channelA, 0)
+		alarm.alarmOff(func() { pwm.Set(channelA, 0) })
 	})
 
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
@@ -96,7 +94,7 @@ func main() {
 	})
 	// 割り込み処理設定終了 ------------------------------------------------------------
 
-	// ループ処理開始 ------------------------------------------------------------------
+	// メインの処理開始 ------------------------------------------------------------------
 	alarm.setDefaultTime(fetchTimeNowJst())
 
 	modeBefore := 0
@@ -113,13 +111,11 @@ func main() {
 				labelTime.FillScreen(glay)
 			}
 
-			if timeNow.Equal(alarm.time) {
-				alarm.ringing = true
-				pwm.Set(channelA, pwm.Top()/4)
-			}
-
 			stringTimeNow := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
 				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
+
+			alarm.alarmOnIfTimeMatched(timeNow, func() { pwm.Set(channelA, pwm.Top()/4) })
+
 			if alarm.ringing == true {
 				stringTimeNow = stringTimeNow + "\n!Alarm-ON!"
 			}
@@ -152,8 +148,7 @@ func main() {
 				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
-			// 年月日を同期させる。日付が変わってもアラームが鳴るようにするため
-			alarm.ajustDay(timeNow)
+			alarm.adjustDay(timeNow)
 		}
 
 		timeNowBefore = timeNow
@@ -162,4 +157,5 @@ func main() {
 
 		time.Sleep(10 * time.Millisecond)
 	}
+
 }
