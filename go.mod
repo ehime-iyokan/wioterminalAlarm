@@ -1,4 +1,4 @@
-module github.com/ehime-iyokan/alarm
+module github.com/ehime-iyokan/wioterminalAlarm
 
 go 1.19
 
