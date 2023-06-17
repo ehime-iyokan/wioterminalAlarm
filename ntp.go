@@ -10,7 +10,7 @@ import (
 
 const (
 	ntpPacketSize = 48
-	ntpHost       = "61.205.120.130"
+	ntpHost       = "61.205.120.130" // NICT公開NTPサービス の IP (今後変更となる可能性がある：https://it.srad.jp/story/20/03/11/1247259/)
 )
 
 var (
