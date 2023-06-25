@@ -71,6 +71,5 @@ type UARTx struct {
 func fetchTimeNowJst() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 	t := time.Now().UTC().In(jst)
-	// nsは0で固定する。ns単位までは比較は行わないため
-	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 }
