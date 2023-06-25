@@ -32,7 +32,8 @@ func SetupRTL8720DN() (*rtl8720dn.Driver, error) {
 	return rtl, nil
 }
 
-func AdjustTime(ssid, pass string, timeout time.Duration) (*rtl8720dn.Driver, error) {
+// Wifi sets up the RTL8720DN and connects it to Wi-Fi.
+func AdjustTimeUsingWifi(ssid, pass string, timeout time.Duration) (*rtl8720dn.Driver, error) {
 	_, err := SetupRTL8720DN()
 	if err != nil {
 		return nil, err
@@ -67,7 +68,8 @@ type UARTx struct {
 	*machine.UART
 }
 
-func fetchStringNowJst() time.Time {
+func fetchTimeNowJst() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
-	return time.Now().UTC().In(jst)
+	t := time.Now().UTC().In(jst)
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 }
