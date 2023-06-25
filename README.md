@@ -2,7 +2,7 @@
 * windows11
 * tinygo version 0.27.0 windows/amd64 (using go version go1.19.9 and LLVM version 15.0.0)
 * wioterminal
-# alarm
+# function
 * 機能一覧
   * 時刻表示機能
     * 現在時刻を表示する
