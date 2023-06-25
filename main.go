@@ -34,6 +34,8 @@ func main() {
 
 	alarm := alarm.Alarm{}
 	mode := 0 // mode = 0:時間表示モード, 1:時間設定モード
+	flgModeEdge1 := true
+	flgModeEdge2 := true
 
 	// ハードウェア設定処理開始 ---------------------------------------------------------
 	display := initdisplay.InitDisplay()
@@ -76,6 +78,8 @@ func main() {
 	// 割り込み処理設定開始 ------------------------------------------------------------
 	button_3.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		mode ^= 1
+		flgModeEdge1 = true
+		flgModeEdge2 = true
 	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
 		alarm.AlarmOff(func() { pwm.Set(channelA, 0) })
@@ -100,7 +104,6 @@ func main() {
 	// メインの処理開始 ------------------------------------------------------------------
 	alarm.SetDefaultTime(fetchTimeNowJst())
 
-	modeBefore := 0
 	timeAlarmBefore := time.Time{}
 	timeNowBefore := time.Time{}
 
@@ -109,9 +112,10 @@ func main() {
 
 		if mode == 0 {
 			// 時間表示モード
-			if modeBefore == 1 {
+			if flgModeEdge1 == true {
 				// 画面遷移直後の処理
 				labelTime.FillScreen(glay)
+				flgModeEdge1 = false
 			}
 
 			stringTimeNow := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
@@ -135,11 +139,12 @@ func main() {
 			// 時間設定モード
 			stringTimeAlarm := fmt.Sprintf("setting alarm\n%02d:%02d", alarm.GetTime().Hour(), alarm.GetTime().Minute())
 
-			if modeBefore == 0 {
+			if flgModeEdge2 == true {
 				// 画面遷移直後の処理
 				labelTime.FillScreen(glay)
 				tinyfont.WriteLine(labelTime, &freemono.Regular12pt7b, 0, 18, stringTimeAlarm, white)
 				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
+				flgModeEdge2 = false
 			}
 
 			if alarm.GetTime().Equal(timeAlarmBefore) {
@@ -155,7 +160,6 @@ func main() {
 		}
 
 		timeNowBefore = timeNow
-		modeBefore = mode
 		timeAlarmBefore = alarm.GetTime()
 
 		time.Sleep(10 * time.Millisecond)
