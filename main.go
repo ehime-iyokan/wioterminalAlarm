@@ -7,6 +7,7 @@ import (
 	"machine"
 	"time"
 
+	"github.com/ehime-iyokan/alarm"
 	"github.com/sago35/tinydisplay/examples/initdisplay"
 	"tinygo.org/x/tinyfont"
 	"tinygo.org/x/tinyfont/freemono"
@@ -31,7 +32,7 @@ func main() {
 	glay := color.RGBA{R: 0x88, G: 0x88, B: 0x88, A: 0xFF}
 	black := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
 
-	alarm := Alarm{}
+	alarm := alarm.Alarm{}
 	mode := 0 // mode = 0:時間表示モード, 1:時間設定モード
 
 	// ハードウェア設定処理開始 ---------------------------------------------------------
@@ -77,25 +78,27 @@ func main() {
 		mode ^= 1
 	})
 	button_2.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.alarmOff(func() { pwm.Set(channelA, 0) })
+		alarm.AlarmOff(func() { pwm.Set(channelA, 0) })
 	})
 
 	crosskey.up.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.timeIncrement()
+		alarm.TimeIncrement()
 	})
 	crosskey.down.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.timeDecrement()
+		alarm.TimeDecrement()
 	})
 	crosskey.left.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.selectorTime ^= 1
+		valueToggled := alarm.GetStatusSelectorTime() ^ 1
+		alarm.SetSelectorTime(valueToggled)
 	})
 	crosskey.right.SetInterrupt(machine.PinFalling, func(machine.Pin) {
-		alarm.selectorTime ^= 1
+		valueToggled := alarm.GetStatusSelectorTime() ^ 1
+		alarm.SetSelectorTime(valueToggled)
 	})
 	// 割り込み処理設定終了 ------------------------------------------------------------
 
 	// メインの処理開始 ------------------------------------------------------------------
-	alarm.setDefaultTime(fetchTimeNowJst())
+	alarm.SetDefaultTime(fetchTimeNowJst())
 
 	modeBefore := 0
 	timeAlarmBefore := time.Time{}
@@ -114,9 +117,9 @@ func main() {
 			stringTimeNow := fmt.Sprintf("%04d/%02d/%02d\n%02d:%02d:%02d",
 				timeNow.Year(), timeNow.Month(), timeNow.Day(), timeNow.Hour(), timeNow.Minute(), timeNow.Second())
 
-			alarm.alarmOnIfTimeMatched(timeNow, func() { pwm.Set(channelA, pwm.Top()/4) })
+			alarm.AlarmOnIfTimeMatched(timeNow, func() { pwm.Set(channelA, pwm.Top()/4) })
 
-			if alarm.ringing == true {
+			if alarm.GetStatusRinging() == true {
 				stringTimeNow = stringTimeNow + "\n!Alarm-ON!"
 			}
 
@@ -130,7 +133,7 @@ func main() {
 			}
 		} else {
 			// 時間設定モード
-			stringTimeAlarm := fmt.Sprintf("setting alarm\n%02d:%02d", alarm.time.Hour(), alarm.time.Minute())
+			stringTimeAlarm := fmt.Sprintf("setting alarm\n%02d:%02d", alarm.GetTime().Hour(), alarm.GetTime().Minute())
 
 			if modeBefore == 0 {
 				// 画面遷移直後の処理
@@ -139,7 +142,7 @@ func main() {
 				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
-			if alarm.time.Equal(timeAlarmBefore) {
+			if alarm.GetTime().Equal(timeAlarmBefore) {
 				// 何もしない
 			} else {
 				// 情報に変化があれば表示内容を更新する
@@ -148,12 +151,12 @@ func main() {
 				display.DrawRGBBitmap(0, 0, labelTime.Buf, labelTime.W, labelTime.H)
 			}
 
-			alarm.adjustDay(timeNow)
+			alarm.AdjustDay(timeNow)
 		}
 
 		timeNowBefore = timeNow
 		modeBefore = mode
-		timeAlarmBefore = alarm.time
+		timeAlarmBefore = alarm.GetTime()
 
 		time.Sleep(10 * time.Millisecond)
 	}

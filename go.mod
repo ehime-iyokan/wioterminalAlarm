@@ -3,6 +3,7 @@ module github.com/ehime-iyokan/wioterminalAlarm
 go 1.19
 
 require (
+	github.com/ehime-iyokan/alarm v0.0.0-20230625115050-ea24185fbc7d
 	github.com/sago35/tinydisplay v0.3.0
 	tinygo.org/x/drivers v0.23.0
 	tinygo.org/x/tinyfont v0.3.0
